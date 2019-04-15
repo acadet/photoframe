@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity"
+        android:background="@color/background"
+        android:id="@+id/root"
+>
+
+    <ViewSwitcher
+            android:id="@+id/switcher"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+
+        <ImageView
+                android:id="@+id/first"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+        />
+
+        <ImageView
+                android:id="@+id/second"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+        />
+
+    </ViewSwitcher>
+
+    <TextView
+            android:id="@+id/folder_name"
+            android:layout_width="300dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="top|right"
+            android:visibility="gone"
+            tools:visibility="visible"
+            android:textAllCaps="true"
+            android:textColor="@color/white"
+            android:textSize="30sp"
+            android:background="@color/shadow"
+            tools:text="Folder name"
+            android:layout_margin="12dp"
+            android:padding="8dp"
+    />
+
+</FrameLayout>
