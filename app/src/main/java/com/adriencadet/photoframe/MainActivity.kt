@@ -12,6 +12,7 @@ import android.widget.ViewSwitcher
 import com.jakewharton.rxrelay2.PublishRelay
 import hu.akarnokd.rxjava2.operators.ObservableTransformers
 import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -107,6 +108,19 @@ class MainActivity : AppCompatActivity() {
                     folderNameView.text = currentFolderName
                     folderNameView.visibility = View.VISIBLE
                 }
+            }
+
+        compositeDisposable += isValveOpenRelay
+            .switchMapMaybe { isOpen ->
+                if (isOpen) {
+                    Maybe.empty()
+                } else {
+                    Maybe.timer(Constants.MAX_PAUSE_DURATION_SEC, TimeUnit.SECONDS, Schedulers.io())
+                        .map { Unit }
+                }
+            }
+            .subscribe {
+                isValveOpenRelay.accept(true)
             }
     }
 
