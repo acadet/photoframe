@@ -51,13 +51,27 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        initOS()
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         initBindings()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hideBars()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+
+        if (hasFocus) {
+            hideBars()
+        }
     }
 
     override fun onStop() {
         compositeDisposable?.dispose()
-        cleanOS()
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         super.onStop()
     }
 
@@ -68,8 +82,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun initViews() {
         currentSwitcherIndex = -1
-        currentFolderName = ""
-        isValveOpen = true
 
         setContentView(R.layout.activity_main)
         rootView = findViewById(R.id.root)
@@ -90,6 +102,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initBindings() {
+        currentFolderName = ""
+        isValveOpen = true
+
         pictureService = PictureService(
             GalleryPictureFetcher()
         )
@@ -168,14 +183,9 @@ class MainActivity : AppCompatActivity() {
                 )
     }
 
-    private fun initOS() {
+    private fun hideBars() {
         window.decorView.systemUiVisibility =
             View.SYSTEM_UI_FLAG_IMMERSIVE or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-    }
-
-    private fun cleanOS() {
-        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun startNotification() {
