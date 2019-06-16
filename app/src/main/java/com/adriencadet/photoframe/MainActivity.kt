@@ -2,6 +2,7 @@ package com.adriencadet.photoframe
 
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -152,35 +153,50 @@ class MainActivity : AppCompatActivity() {
                 .compose(ObservableTransformers.valve(isValveOpenRelay, true, 1))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                    { (bitmap, folderName) ->
-                        val isPortrait = bitmap.width < bitmap.height
-                        val scaleType =
-                            if (isPortrait) ImageView.ScaleType.CENTER_INSIDE else ImageView.ScaleType.CENTER_CROP
-
-                        when (currentSwitcherIndex) {
-                            0 -> {
-                                secondImageView.scaleType = scaleType
-                                secondImageView.setImageBitmap(bitmap)
-                                currentSwitcherIndex = 1
-                                switcherView.showNext()
-                            }
-                            1 -> {
-                                firstImageView.scaleType = scaleType
-                                firstImageView.setImageBitmap(bitmap)
-                                currentSwitcherIndex = 0
-                                switcherView.showPrevious()
-                            }
-                            else -> {
-                                firstImageView.scaleType = scaleType
-                                firstImageView.setImageBitmap(bitmap)
-                                currentSwitcherIndex = 0
-                            }
-                        }
-
-                        currentFolderName = folderName
-                    },
-                    { Toast.makeText(this@MainActivity, it.message, Toast.LENGTH_LONG) }
+                    { handlePictureResult(it) },
+                    { showError(it.message ?: "Exception") }
                 )
+    }
+
+    private fun handlePictureResult(result: PictureResult) {
+        when (result) {
+            is PictureResult.StorageFailure -> showError("storage failure")
+            is PictureResult.BitmapOperationFailure -> showError("bitmap failure")
+            is PictureResult.Success -> {
+                val bitmap = result.bitmap
+                val isPortrait = bitmap.width < bitmap.height
+                val scaleType =
+                    if (isPortrait) ImageView.ScaleType.CENTER_INSIDE else ImageView.ScaleType.CENTER_CROP
+
+                when (currentSwitcherIndex) {
+                    0 -> {
+                        secondImageView.scaleType = scaleType
+                        secondImageView.setImageBitmap(bitmap)
+                        currentSwitcherIndex = 1
+                        switcherView.showNext()
+                    }
+                    1 -> {
+                        firstImageView.scaleType = scaleType
+                        firstImageView.setImageBitmap(bitmap)
+                        currentSwitcherIndex = 0
+                        switcherView.showPrevious()
+                    }
+                    else -> {
+                        firstImageView.scaleType = scaleType
+                        firstImageView.setImageBitmap(bitmap)
+                        currentSwitcherIndex = 0
+                    }
+                }
+
+                currentFolderName = result.folderName
+            }
+        }
+
+    }
+
+    private fun showError(message: String) {
+        Log.e("PhotoFrame", "Error in MainActivity $message")
+        Toast.makeText(this@MainActivity, message, Toast.LENGTH_LONG)
     }
 
     private fun hideBars() {

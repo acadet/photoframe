@@ -3,43 +3,54 @@ package com.adriencadet.photoframe
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import io.reactivex.Maybe
+import android.graphics.Matrix
+import android.media.ExifInterface
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
-import android.media.ExifInterface
-import android.graphics.Matrix
-
-data class Picture(
-    val bitmap: Bitmap,
-    val folderName: String
-)
 
 class PictureService(val fetcher: GalleryPictureFetcher) {
 
-    fun observeImages(context: Context, desiredWidth: Int, desiredHeight: Int): Observable<Picture> {
+    fun observeImages(context: Context, desiredWidth: Int, desiredHeight: Int): Observable<PictureResult> {
         return fetcher.fetchPaths(context)
-            .map { it.shuffled() }
-            .flatMapObservable { files ->
-                Observable.intervalRange(
-                    0,
-                    files.size.toLong() - 1,
-                    0,
-                    Constants.DURATION_SEC,
-                    TimeUnit.SECONDS,
-                    Schedulers.io()
-                )
-                    .map { it.toInt() }
-                    .map { index -> files[index] }
+            .flatMapObservable { result ->
+                when (result) {
+                    is GalleryPictureFetcherResult.Success -> emitPictures(result.files, desiredWidth, desiredHeight)
+                    is GalleryPictureFetcherResult.InvalidCursor -> Observable.just(PictureResult.StorageFailure)
+                }
             }
-            .switchMapMaybe { (path, folderName) ->
-                Maybe.defer {
+    }
+
+    private fun emitPictures(
+        pictureFiles: Sequence<PictureFile>,
+        desiredWidth: Int,
+        desiredHeight: Int
+    ): Observable<PictureResult> {
+        val count = pictureFiles.count()
+        val shuffledIndexes = (0 until count).shuffled()
+
+        return Observable.intervalRange(
+            0,
+            count.toLong() - 1,
+            0,
+            Constants.DURATION_SEC,
+            TimeUnit.SECONDS,
+            Schedulers.io()
+        )
+            .map { it.toInt() }
+            .map { index ->
+                val shuffledIndex = shuffledIndexes[index]
+                pictureFiles.elementAt(shuffledIndex)
+            }
+            .switchMapSingle { (path, folderName) ->
+                Single.fromCallable {
                     val bitmap = rotateIfNeeded(path, buildResizedBitmap(path, desiredWidth, desiredHeight))
 
                     if (bitmap == null) {
-                        Maybe.empty()
+                        PictureResult.BitmapOperationFailure
                     } else {
-                        Maybe.just(Picture(bitmap, folderName))
+                        PictureResult.Success(bitmap, folderName)
                     }
                 }
                     .subscribeOn(Schedulers.io())
@@ -61,7 +72,7 @@ class PictureService(val fetcher: GalleryPictureFetcher) {
     }
 
     private fun rotateIfNeeded(absolutePath: String, bitmap: Bitmap?): Bitmap? {
-        if (bitmap == null) return null
+        bitmap ?: return null
 
         val exifInterface = ExifInterface(absolutePath)
         val orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
