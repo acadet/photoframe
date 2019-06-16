@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
+import com.jakewharton.rxrelay2.BehaviorRelay
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.schedulers.Schedulers
@@ -28,29 +29,31 @@ class PictureService(val fetcher: GalleryPictureFetcher) {
         desiredHeight: Int
     ): Observable<PictureResult> {
         val count = pictureFiles.count()
-        val shuffledIndexes = (0 until count).shuffled()
 
-        return Observable.intervalRange(
-            0,
-            count.toLong() - 1,
-            0,
-            Constants.DURATION_SEC,
-            TimeUnit.SECONDS,
-            Schedulers.io()
-        )
-            .map { it.toInt() }
+        if (count == 0) return Observable.empty()
+
+        val shuffledIndexes = (0 until count).shuffled()
+        val requestEmitter = BehaviorRelay.createDefault(0)
+
+        return requestEmitter.take(count.toLong())
             .map { index ->
                 val shuffledIndex = shuffledIndexes[index]
-                pictureFiles.elementAt(shuffledIndex)
+                index to pictureFiles.elementAt(shuffledIndex)
             }
-            .switchMapSingle { (path, folderName) ->
-                Single.fromCallable {
+            .switchMap { (index, file) ->
+                val (path, folderName) = file
+                Observable.defer {
                     val bitmap = rotateIfNeeded(path, buildResizedBitmap(path, desiredWidth, desiredHeight))
 
                     if (bitmap == null) {
-                        PictureResult.BitmapOperationFailure
+                        Observable.just(PictureResult.BitmapOperationFailure)
+                            .doOnNext { requestEmitter.accept(index + 1) }
                     } else {
-                        PictureResult.Success(bitmap, folderName)
+                        Single.timer(Constants.DURATION_SEC, TimeUnit.SECONDS, Schedulers.io())
+                            .doOnSuccess{ requestEmitter.accept(index + 1) }
+                            .ignoreElement()
+                            .toObservable<PictureResult>()
+                            .startWith(PictureResult.Success(bitmap, folderName))
                     }
                 }
                     .subscribeOn(Schedulers.io())
