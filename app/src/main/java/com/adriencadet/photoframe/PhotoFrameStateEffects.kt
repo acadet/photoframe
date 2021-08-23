@@ -14,14 +14,14 @@ class PhotoFrameStateEffects(
 
     fun effects(): List<Effect<PhotoFrameState>> {
         return listOf(
-            SlideShowTimer(),
-            SlideShowLifecycle(),
+            SlideshowTimer(),
+            SlideshowLifecycle(),
             PictureFetcher(),
             PictureStream()
         )
     }
 
-    inner class SlideShowTimer : StateEffect<PhotoFrameState> {
+    inner class SlideshowTimer : StateEffect<PhotoFrameState> {
         override fun run(state: Observable<PhotoFrameState>) =
             state
                 .map { it.isRunning }
@@ -42,14 +42,14 @@ class PhotoFrameStateEffects(
                 }
     }
 
-    inner class SlideShowLifecycle : ActionWithStateEffect<PhotoFrameState> {
+    inner class SlideshowLifecycle : ActionWithStateEffect<PhotoFrameState> {
         override fun run(actions: Observable<out Action>, currentState: () -> PhotoFrameState) =
             actions
-                .filter { it is StartSlideshow || it is TappedSlideShow }
+                .filter { it is StartSlideshow || it is TappedSlideshow }
                 .switchMap {
                     when (it) {
                         is StartSlideshow -> startSlideShow()
-                        is TappedSlideShow -> toggleSlideShowState(currentState)
+                        is TappedSlideshow -> toggleSlideShowState(currentState)
                         else -> Observable.empty()
                     }
                 }

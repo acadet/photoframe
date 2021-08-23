@@ -34,7 +34,7 @@ class PhotoFrameStateMachine(
             is StartSlideshow -> reduce(action)
             is IsRunningChanged -> reduce(action)
 
-            is TappedSlideShow,
+            is TappedSlideshow,
             is NextPicture -> this
         }
 
