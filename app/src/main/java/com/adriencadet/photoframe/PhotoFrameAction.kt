@@ -6,7 +6,7 @@ sealed class PhotoFrameAction : Action
 
 data class StartSlideshow(val desiredWidth: Int, val desiredHeight: Int) : PhotoFrameAction()
 
-object TappedSlideShow : PhotoFrameAction()
+object TappedSlideshow : PhotoFrameAction()
 
 object NextPicture : PhotoFrameAction()
 
