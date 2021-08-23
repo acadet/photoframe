@@ -31,7 +31,7 @@ class PhotoFrameStateEffects(
                         isRunning -> {
                             Observable.interval(
                                 0,
-                                Constants.DURATION_SEC,
+                                Constants.PHOTO_DURATION_SEC,
                                 TimeUnit.SECONDS,
                                 Schedulers.io()
                             )
@@ -56,14 +56,14 @@ class PhotoFrameStateEffects(
 
         private fun startSlideShow() =
             Observable
-                .timer(Constants.INIT_DURATION_SEC, TimeUnit.SECONDS, Schedulers.io())
+                .timer(Constants.DELAY_BEFORE_START_SEC, TimeUnit.SECONDS, Schedulers.io())
                 .map { IsRunningChanged(true) }
 
         private fun toggleSlideShowState(currentState: () -> PhotoFrameState) =
             when {
                 currentState().isRunning -> {
                     Observable.timer(
-                        Constants.MAX_PAUSE_DURATION_SEC,
+                        Constants.PAUSE_TIMEOUT_SEC,
                         TimeUnit.SECONDS,
                         Schedulers.io()
                     )
