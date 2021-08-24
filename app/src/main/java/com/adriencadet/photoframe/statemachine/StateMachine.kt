@@ -16,11 +16,17 @@ class StateMachine<TState>(
     private val currentState = BehaviorRelay.createDefault(initialState)
     private val actions = PublishRelay.create<Action>()
 
-    private val effectObservables = effects.map { it.run(actions, currentState.distinctUntilChanged(), { currentState.value!! }) }
+    private val effectObservables = effects.map {
+        it.run(
+            actions,
+            currentState.distinctUntilChanged(),
+            { currentState.value!! })
+    }
 
     private val effectStream = Observable
         .mergeArray(*effectObservables.toTypedArray())
         .subscribeOn(scheduler)
+        .observeOn(scheduler)
         .doOnNext {
             Log.d("StateMachine", "Effect emitting ${it.javaClass.name}")
             actions.accept(it)
@@ -32,6 +38,7 @@ class StateMachine<TState>(
             actions,
             effectStream.ignoreElements().toObservable()
         )
+        .observeOn(scheduler)
         .map { action ->
             Log.d("StateMachine", "New state to be reduced further to ${action.javaClass.name}")
             reducer(currentState.value!!, action)

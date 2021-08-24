@@ -1,5 +1,6 @@
 package com.adriencadet.photoframe
 
+import android.animation.Animator
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var firstImageView: ImageView
     private lateinit var secondImageView: ImageView
     private lateinit var folderNameView: TextView
+    private lateinit var folderBackgroundView: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +80,7 @@ class MainActivity : AppCompatActivity() {
         switcherView = findViewById(R.id.switcher)
         firstImageView = findViewById(R.id.first)
         secondImageView = findViewById(R.id.second)
+        folderBackgroundView = findViewById(R.id.folder_background)
         folderNameView = findViewById(R.id.folder_name)
 
         switcherView.setInAnimation(this, android.R.anim.fade_in)
@@ -100,10 +103,14 @@ class MainActivity : AppCompatActivity() {
             .observeIsRunning()
             .bind { (isRunning, folderName) ->
                 when {
-                    isRunning -> folderNameView.visibility = View.GONE
+                    isRunning -> {
+                        folderBackgroundView.hide()
+                        folderNameView.hide()
+                    }
                     else -> {
                         folderNameView.text = folderName
-                        folderNameView.visibility = View.VISIBLE
+                        folderBackgroundView.show()
+                        folderNameView.show()
                     }
                 }
             }
@@ -111,6 +118,47 @@ class MainActivity : AppCompatActivity() {
         interactor
             .observePictureResult()
             .bind { handlePictureResult(it) }
+    }
+
+    private fun View.show() {
+        animate().apply {
+            alpha(1f)
+            duration = Constants.PAUSE_ANIMATION_DURATION_MS
+            setListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator?) {
+                    alpha = 0f
+                    visibility = View.VISIBLE
+                }
+
+                override fun onAnimationEnd(animation: Animator?) {}
+
+                override fun onAnimationCancel(animation: Animator?) {}
+
+                override fun onAnimationRepeat(animation: Animator?) {}
+            })
+
+            start()
+        }
+    }
+
+    private fun View.hide() {
+        animate().apply {
+            alpha(0f)
+            duration = Constants.PAUSE_ANIMATION_DURATION_MS
+            setListener(object : Animator.AnimatorListener {
+                override fun onAnimationStart(animation: Animator?) {}
+
+                override fun onAnimationEnd(animation: Animator?) {
+                    visibility = View.GONE
+                }
+
+                override fun onAnimationCancel(animation: Animator?) {}
+
+                override fun onAnimationRepeat(animation: Animator?) {}
+            })
+
+            start()
+        }
     }
 
     private fun handlePictureResult(result: PictureResult) {
