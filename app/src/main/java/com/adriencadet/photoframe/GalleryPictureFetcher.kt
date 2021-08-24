@@ -1,6 +1,7 @@
 package com.adriencadet.photoframe
 
 import android.content.Context
+import android.database.Cursor
 import android.provider.MediaStore
 import android.util.Log
 import io.reactivex.Single
@@ -9,47 +10,65 @@ import io.reactivex.schedulers.Schedulers
 
 class GalleryPictureFetcher {
 
+    private companion object {
+        val TARGET_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val PATH_COLUMN = MediaStore.MediaColumns.DATA
+        val FOLDER_NAME_COLUMN = MediaStore.Images.Media.BUCKET_DISPLAY_NAME
+    }
+
     fun fetchPaths(context: Context): Single<GalleryPictureFetcherResult> {
-        return Single.fromCallable { fetch(context) }
+        return Single
+            .fromCallable { fetch(context) }
             .subscribeOn(Schedulers.io())
     }
 
     private fun fetch(context: Context): GalleryPictureFetcherResult {
-        val uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        val projection = listOf(
-            MediaStore.MediaColumns.DATA,
-            MediaStore.Images.Media.BUCKET_DISPLAY_NAME
-        ).toTypedArray()
+        val fileCursor = context.toFileCursor() ?: return GalleryPictureFetcherResult.InvalidCursor
 
-        val cursor = context.contentResolver.query(uri, projection, null, null, null)
-        cursor ?: return GalleryPictureFetcherResult.InvalidCursor
+        val pathIndex = fileCursor.getColumnIndex(PATH_COLUMN)
+        val folderNameIndex = fileCursor.getColumnIndex(FOLDER_NAME_COLUMN)
 
-        val pathIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
-        val folderNameIndex = cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
+        if (!fileCursor.moveToFirst()) return GalleryPictureFetcherResult.Success(emptySequence())
 
-        if (!cursor.moveToFirst()) return GalleryPictureFetcherResult.Success(emptySequence())
-
-        val outcome = ArrayList<PictureFile>()
-        do {
+        val pictureFiles = ArrayList<PictureFile>()
+        try {
+            do {
             val absolutePath = try {
-                cursor.getString(pathIndex).orEmpty()
+                fileCursor.getString(pathIndex).orEmpty()
             } catch (e: Exception) {
                 Log.e("PictureFrame", "Could not retrieve absolutePath")
                 null
             }
             val folderName = try {
-                cursor.getString(folderNameIndex).orEmpty()
+                fileCursor.getString(folderNameIndex).orEmpty()
             } catch (e: Exception) {
                 Log.e("PictureFrame", "Could not retrieve folderName")
                 null
             }
 
-            absolutePath ?: continue
-            folderName ?: continue
+                if (absolutePath.isNullOrEmpty()) continue
+                folderName ?: continue
 
-            outcome.add(PictureFile(absolutePath, folderName))
-        } while (cursor.moveToNext())
+                pictureFiles.add(PictureFile(absolutePath = absolutePath, folderName = folderName))
+            } while (fileCursor.moveToNext())
+        } finally {
+            fileCursor.close()
+        }
 
-        return GalleryPictureFetcherResult.Success(outcome.asSequence())
+        return GalleryPictureFetcherResult.Success(pictureFiles.asSequence())
+    }
+
+    private fun Context.toFileCursor(): Cursor? {
+        return contentResolver.query(
+            TARGET_URI,
+            listOf(
+                PATH_COLUMN,
+                FOLDER_NAME_COLUMN
+            )
+                .toTypedArray(),
+            null,
+            null,
+            null
+        )
     }
 }
