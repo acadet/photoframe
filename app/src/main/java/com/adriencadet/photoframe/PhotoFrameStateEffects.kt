@@ -3,9 +3,9 @@ package com.adriencadet.photoframe
 import android.content.Context
 import com.adriencadet.photoframe.statemachine.*
 import io.reactivex.Observable
+import io.reactivex.rxkotlin.ofType
 import io.reactivex.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
-import io.reactivex.rxkotlin.ofType
 
 class PhotoFrameStateEffects(
     private val context: Context,
@@ -48,16 +48,11 @@ class PhotoFrameStateEffects(
                 .filter { it is StartSlideshow || it is TappedSlideshow }
                 .switchMap {
                     when (it) {
-                        is StartSlideshow -> startSlideShow()
+                        is StartSlideshow -> Observable.just(IsRunningChanged(true))
                         is TappedSlideshow -> toggleSlideShowState(currentState)
                         else -> Observable.empty()
                     }
                 }
-
-        private fun startSlideShow() =
-            Observable
-                .timer(Constants.DELAY_BEFORE_START_SEC, TimeUnit.SECONDS, Schedulers.io())
-                .map { IsRunningChanged(true) }
 
         private fun toggleSlideShowState(currentState: () -> PhotoFrameState) =
             when {
@@ -81,16 +76,22 @@ class PhotoFrameStateEffects(
                 .doOnNext {
                     pictureService.requestNextPicture()
                 }
+                .ignoreElements()
+                .toObservable<PhotoFrameAction>()
     }
 
-    inner class PictureStream: ActionWithStateEffect<PhotoFrameState> {
-        override fun run(actions: Observable<out Action>, currentState: () -> PhotoFrameState) =
-            Observable
-                .defer {
-                val state = currentState()
-
-                pictureService.observeImages(context, state.desiredWidth, state.desiredHeight)
-            }
+    inner class PictureStream : ActionEffect<PhotoFrameState> {
+        override fun run(actions: Observable<out Action>) =
+            actions
+                .ofType<StartSlideshow>()
+                .switchMap { action ->
+                    pictureService
+                        .observeImages(
+                            context,
+                            action.desiredWidth,
+                            action.desiredHeight
+                        )
+                }
                 .map { NewPicture(it) }
     }
 }

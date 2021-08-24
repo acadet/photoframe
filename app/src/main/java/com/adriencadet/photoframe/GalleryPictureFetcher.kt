@@ -10,6 +10,12 @@ import io.reactivex.schedulers.Schedulers
 
 class GalleryPictureFetcher {
 
+    private companion object {
+        val TARGET_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val PATH_COLUMN = MediaStore.MediaColumns.DATA
+        val FOLDER_NAME_COLUMN = MediaStore.Images.Media.BUCKET_DISPLAY_NAME
+    }
+
     fun fetchPaths(context: Context): Single<GalleryPictureFetcherResult> {
         return Single
             .fromCallable { fetch(context) }
@@ -19,13 +25,14 @@ class GalleryPictureFetcher {
     private fun fetch(context: Context): GalleryPictureFetcherResult {
         val fileCursor = context.toFileCursor() ?: return GalleryPictureFetcherResult.InvalidCursor
 
-        val pathIndex = fileCursor.getColumnIndex(MediaStore.MediaColumns.DATA)
-        val folderNameIndex = fileCursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
+        val pathIndex = fileCursor.getColumnIndex(PATH_COLUMN)
+        val folderNameIndex = fileCursor.getColumnIndex(FOLDER_NAME_COLUMN)
 
         if (!fileCursor.moveToFirst()) return GalleryPictureFetcherResult.Success(emptySequence())
 
         val pictureFiles = ArrayList<PictureFile>()
-        do {
+        try {
+            do {
             val absolutePath = try {
                 fileCursor.getString(pathIndex).orEmpty()
             } catch (e: Exception) {
@@ -39,21 +46,24 @@ class GalleryPictureFetcher {
                 null
             }
 
-            absolutePath ?: continue
-            folderName ?: continue
+                if (absolutePath.isNullOrEmpty()) continue
+                folderName ?: continue
 
-            pictureFiles.add(PictureFile(absolutePath, folderName))
-        } while (fileCursor.moveToNext())
+                pictureFiles.add(PictureFile(absolutePath = absolutePath, folderName = folderName))
+            } while (fileCursor.moveToNext())
+        } finally {
+            fileCursor.close()
+        }
 
         return GalleryPictureFetcherResult.Success(pictureFiles.asSequence())
     }
 
     private fun Context.toFileCursor(): Cursor? {
         return contentResolver.query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            TARGET_URI,
             listOf(
-                MediaStore.MediaColumns.DATA,
-                MediaStore.Images.Media.BUCKET_DISPLAY_NAME
+                PATH_COLUMN,
+                FOLDER_NAME_COLUMN
             )
                 .toTypedArray(),
             null,

@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import com.jakewharton.rxrelay2.BehaviorRelay
-import com.jakewharton.rxrelay2.PublishRelay
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.rxkotlin.withLatestFrom
@@ -14,7 +13,7 @@ import io.reactivex.schedulers.Schedulers
 
 class PictureService(val fetcher: GalleryPictureFetcher) {
 
-    private val requestRelay = PublishRelay.create<Unit>()
+    private val requestRelay = BehaviorRelay.create<Unit>()
 
     fun observeImages(
         context: Context,

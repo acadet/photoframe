@@ -5,9 +5,9 @@ import com.gojuno.koptional.rxjava2.filterSome
 import com.gojuno.koptional.toOptional
 import io.reactivex.Observable
 
-class MainActivityInteractor(private val context: Context) {
+class MainActivityInteractor(private val applicationContext: Context) {
 
-    private val stateMachine = PhotoFrameStateMachineFactory.build(context)
+    private val stateMachine = PhotoFrameStateMachineFactory.build(applicationContext)
     private val notificationService: NotificationService = NotificationService()
 
     fun observeIsRunning(): Observable<Pair<Boolean, String>> {
@@ -36,11 +36,11 @@ class MainActivityInteractor(private val context: Context) {
     }
 
     fun startNotification() {
-        notificationService.start(context)
+        notificationService.start(applicationContext)
     }
 
     fun hideNotification() {
-        notificationService.stop(context)
+        notificationService.stop(applicationContext)
     }
 
     private val PhotoFrameState.folderName: String

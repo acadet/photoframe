@@ -21,7 +21,7 @@ class MainActivity : AppCompatActivity() {
     private val compositeDisposable = CompositeDisposable()
 
     private val interactor by lazy {
-        MainActivityInteractor(applicationContext)
+        MainActivityInteractor(applicationContext = applicationContext)
     }
 
     private var currentSwitcherIndex = 0
@@ -89,10 +89,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSlideShow() {
-        interactor.startSlideshow(
-            desiredWidth = firstImageView.width,
-            desiredHeight = firstImageView.height
-        )
+        firstImageView.post {
+            interactor.startSlideshow(
+                desiredWidth = firstImageView.width,
+                desiredHeight = firstImageView.height
+            )
+        }
 
         interactor
             .observeIsRunning()
