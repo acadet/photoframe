@@ -33,18 +33,28 @@ class GalleryPictureFetcher {
         val pictureFiles = ArrayList<PictureFile>()
         try {
             do {
-            val absolutePath = try {
-                fileCursor.getString(pathIndex).orEmpty()
-            } catch (e: Exception) {
-                Log.e("PictureFrame", "Could not retrieve absolutePath")
-                null
-            }
-            val folderName = try {
-                fileCursor.getString(folderNameIndex).orEmpty()
-            } catch (e: Exception) {
-                Log.e("PictureFrame", "Could not retrieve folderName")
-                null
-            }
+                /**
+                 * I spent a lot of time investigating here but it is possible some files are
+                 * missing an absolute path for some reason (might be corrupted?).
+                 *
+                 * Let's ignore them when adding them to the list.
+                 *
+                 * I spent some time playing with URIs as well but that did not help, not worth
+                 * investigating more.
+                 */
+
+                val absolutePath = try {
+                    fileCursor.getString(pathIndex).orEmpty()
+                } catch (e: Exception) {
+                    Log.e("PictureFrame", "Could not retrieve absolutePath")
+                    null
+                }
+                val folderName = try {
+                    fileCursor.getString(folderNameIndex).orEmpty()
+                } catch (e: Exception) {
+                    Log.e("PictureFrame", "Could not retrieve folderName")
+                    null
+                }
 
                 if (absolutePath.isNullOrEmpty()) continue
                 folderName ?: continue
