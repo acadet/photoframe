@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
@@ -118,6 +119,29 @@ class MainActivity : AppCompatActivity() {
         interactor
             .observePictureResult()
             .bind { handlePictureResult(it) }
+
+        interactor
+            .observeIsPausedForTheNight()
+            .bind { isPaused ->
+                Log.e("FOO", "observeIsPausedForTheNight $isPaused")
+                when {
+                    isPaused -> {
+                        window.setBrightness(0f)
+                        switcherView.alpha = 0f
+                    }
+                    else -> {
+                        window.setBrightness(1f)
+                        switcherView.alpha = 1f
+                    }
+                }
+            }
+    }
+
+    private fun Window.setBrightness(alpha: Float) {
+        attributes.let {
+            it.screenBrightness = alpha
+            attributes = it
+        }
     }
 
     private fun View.show() {

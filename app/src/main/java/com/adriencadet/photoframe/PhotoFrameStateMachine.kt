@@ -10,7 +10,8 @@ class PhotoFrameStateMachine(
     private val stateMachine = StateMachine(
         initialState = PhotoFrameState(
             currentPictureResult = null,
-            isRunning = false
+            isRunning = false,
+            isPausedForTheNight = false
         ),
         effects = effects.effects(),
         reducer = { state, action ->
@@ -30,6 +31,7 @@ class PhotoFrameStateMachine(
         when (action) {
             is NewPicture -> reduce(action)
             is IsRunningChanged -> reduce(action)
+            is IsPausedForTheNight -> reduce(action)
 
             is StartSlideshow,
             is TappedSlideshow,
@@ -40,5 +42,12 @@ class PhotoFrameStateMachine(
         copy(currentPictureResult = action.result)
 
     private fun PhotoFrameState.reduce(action: IsRunningChanged) =
-        copy(isRunning = action.isRunning)
+        copy(
+            isRunning = action.isRunning
+        )
+
+    private fun PhotoFrameState.reduce(action: IsPausedForTheNight) =
+        copy(
+            isPausedForTheNight = action.isPausedForTheNight
+        )
 }

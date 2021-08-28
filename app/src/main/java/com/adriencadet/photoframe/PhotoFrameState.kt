@@ -2,5 +2,6 @@ package com.adriencadet.photoframe
 
 data class PhotoFrameState(
     val currentPictureResult: PictureResult?,
-    val isRunning: Boolean
+    val isRunning: Boolean,
+    val isPausedForTheNight: Boolean
 )

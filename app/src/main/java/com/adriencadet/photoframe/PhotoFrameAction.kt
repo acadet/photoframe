@@ -13,3 +13,5 @@ object NextPicture : PhotoFrameAction()
 data class NewPicture(val result: PictureResult) : PhotoFrameAction()
 
 data class IsRunningChanged(val isRunning: Boolean) : PhotoFrameAction()
+
+data class IsPausedForTheNight(val isPausedForTheNight: Boolean): PhotoFrameAction()
