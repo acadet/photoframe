@@ -123,7 +123,6 @@ class MainActivity : AppCompatActivity() {
         interactor
             .observeIsPausedForTheNight()
             .bind { isPaused ->
-                Log.e("FOO", "observeIsPausedForTheNight $isPaused")
                 when {
                     isPaused -> {
                         window.setBrightness(0f)
