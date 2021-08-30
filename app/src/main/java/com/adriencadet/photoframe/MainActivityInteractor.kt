@@ -19,6 +19,14 @@ class MainActivityInteractor(private val applicationContext: Context) {
             }
     }
 
+    fun observeIsPausedForTheNight(): Observable<Boolean> {
+        return stateMachine
+            .observe()
+            .map { it.isPausedForTheNight }
+            .distinctUntilChanged()
+            .skipWhile { isPaused -> !isPaused }
+    }
+
     fun observePictureResult(): Observable<PictureResult> {
         return stateMachine
             .observe()

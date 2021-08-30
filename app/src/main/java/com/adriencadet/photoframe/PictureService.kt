@@ -14,6 +14,7 @@ import io.reactivex.schedulers.Schedulers
 class PictureService(val fetcher: GalleryPictureFetcher) {
 
     private val requestRelay = BehaviorRelay.create<Unit>()
+    private var shuffledIndexes = emptyList<Int>()
 
     fun observeImages(
         context: Context,
@@ -45,7 +46,7 @@ class PictureService(val fetcher: GalleryPictureFetcher) {
 
         if (count == 0) return Observable.empty()
 
-        val shuffledIndexes = (0 until count).shuffled()
+        shuffledIndexes = (0 until count).shuffled()
         val latestIndexRelay = BehaviorRelay.createDefault(0)
 
         return requestRelay
@@ -56,7 +57,15 @@ class PictureService(val fetcher: GalleryPictureFetcher) {
             }
             .switchMapSingle { (index, file) ->
                 retrievePicture(file, desiredWidth = desiredWidth, desiredHeight = desiredHeight)
-                    .doOnSuccess { latestIndexRelay.accept(index + 1) }
+                    .doOnSuccess {
+                        when {
+                            index + 1 == count -> {
+                                shuffledIndexes = shuffledIndexes.shuffled()
+                                latestIndexRelay.accept(0)
+                            }
+                            else -> latestIndexRelay.accept(index + 1)
+                        }
+                    }
             }
     }
 
